@@ -1,8 +1,8 @@
 import hmac
-import urllib
+import urllib.request, urllib.parse, urllib.error
 import hashlib
 import datetime
-from urlparse import urlparse
+from urllib.parse import urlparse
 
 import requests
 
@@ -96,6 +96,7 @@ class AWSRequestsAuth(requests.auth.AuthBase):
         # Create payload hash (hash of the request body content). For GET
         # requests, the payload is an empty string ('').
         body = r.body if r.body else ''
+        body = body.encode('utf-8') if isinstance(body,str) else body
         payload_hash = hashlib.sha256(body).hexdigest()
 
         # Combine elements to create create canonical request
@@ -105,6 +106,7 @@ class AWSRequestsAuth(requests.auth.AuthBase):
 
         # Match the algorithm to the hashing algorithm you use, either SHA-1 or
         # SHA-256 (recommended)
+        canonical_request = canonical_request.encode('utf-8') if isinstance(canonical_request,str) else canonical_request
         algorithm = 'AWS4-HMAC-SHA256'
         credential_scope = (datestamp + '/' + self.aws_region + '/' +
                             self.service +'/' + 'aws4_request')
@@ -146,7 +148,7 @@ class AWSRequestsAuth(requests.auth.AuthBase):
 
         # safe chars adapted from boto's use of urllib.parse.quote
         # https://github.com/boto/boto/blob/d9e5cfe900e1a58717e393c76a6e3580305f217a/boto/auth.py#L393
-        return urllib.quote(parsedurl.path if parsedurl.path else '/', safe='/-_.~')
+        return urllib.parse.quote(parsedurl.path if parsedurl.path else '/', safe='/-_.~')
 
     @classmethod
     def get_canonical_querystring(cls, r):
@@ -185,6 +187,6 @@ class AWSRequestsAuth(requests.auth.AuthBase):
             if key:
                 if canonical_querystring:
                     canonical_querystring += "&"
-                canonical_querystring += u'='.join([key, val])
+                canonical_querystring += '='.join([key, val])
 
         return canonical_querystring
